@@ -1,0 +1,23 @@
+{
+    "name": "carloc/resizable",
+    "require": {
+        "php": ">=7.0",
+        "intervention/image": "^2.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "4.*",
+        "scrutinizer/ocular": "~1.1",
+        "orchestra/testbench": "~3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Keisen\\Resizable\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Keisen\\Resizable\\Test\\": "tests"
+        }
+    },
+    "minimum-stability": "stable"
+}
