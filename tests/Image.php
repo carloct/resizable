@@ -15,7 +15,7 @@ class Image extends Model implements Resizable
     public $timestamps = false;
 
     public $resizable = [
-        'columns' => 'file',
+        'column' => 'file',
         'formats' => [
           'thumb' => [ 'resize' => [100, 100]]
         ]
