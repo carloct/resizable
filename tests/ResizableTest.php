@@ -18,6 +18,8 @@ class ResizableTest extends TestCase
         $image = new Image();
         $image->name = 'test';
         $image->resize($file, 'tests/storage');
+        
+        
 
 
     }
