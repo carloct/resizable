@@ -3,7 +3,8 @@
 namespace Keisen\Resizable;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Intervention\Image\ImageManager;
+use Intervention\Image\ImageManagerStatic;
+use Keisen\Resizable\Exceptions\ResizableException;
 
 trait ResizableTrait
 {
@@ -15,28 +16,38 @@ trait ResizableTrait
      * @param UploadedFile $file   file
      * @param string|null  $folder folder
      *
+     * @throws ResizableException
+     *
      * @return void
      */
     public function resize(UploadedFile $file, string $folder = null)
     {
+        if (!file_exists($folder)) {
+            throw new ResizableException("The folder {$folder} doesn't exist");
+        }
+
         if ($this->hasFormats()) {
-            
+
             $formats = $this->getFormats();
-            $format= key($formats);
-            $filter = key($formats[$format]);
-
-            $manager = new ImageManager();
-            $image = $manager->make($file);
-
-            $output = $image->$filter(
-                $formats[$format][$filter][0],
-                $formats[$format][$filter][1]
-            );
-
             $column = $this->getColumnName();
             $this->$column = $this->generateName($file);
 
-            $output->save($folder ."/". $this->$column);
+            foreach ($formats as $format => $filter) {
+                
+                $func = key($filter);
+                $args = $filter[$func];
+
+                $destFolder = $folder . "/{$format}/";
+
+                if (!$this->createFolder($destFolder)) {
+                    throw new ResizableException("Cannot create format folder");
+                }
+
+                ImageManagerStatic::make($file)
+                    ->$func($args[0], $args[1])
+                    ->save($destFolder . $this->$column);
+            }
+
         }
     }
 
@@ -96,13 +107,29 @@ trait ResizableTrait
      *
      * @return string
      */
-    public function getColumnName()
+    public function getColumnName() : string
     {
         if (isset($this->resizable['column'])) {
             return $this->resizable['column'];
         }
 
         return 'file';
+    }
+
+    /**
+     * Create folder if doesn't exists
+     *
+     * @param string $folder
+     *
+     * @return bool
+     */
+    public function createFolder($folder) : bool
+    {
+        if (!file_exists($folder)) {
+            return mkdir($folder, 0777, true);
+        }
+
+        return true;
     }
 
 }

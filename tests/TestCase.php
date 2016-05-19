@@ -62,11 +62,10 @@ abstract class TestCase extends Orchestra
     {
         parent::tearDown();
 
-        $files = glob('tests/storage/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
+        $dirs = glob('tests/storage/*');
+        foreach ($dirs as $dir) {
+            array_map('unlink', glob("{$dir}/*.*"));
+            rmdir($dir);
         }
     }
 }

@@ -16,8 +16,11 @@ class Image extends Model implements Resizable
 
     public $resizable = [
         'column' => 'file',
+        'keep_original' => true,
         'formats' => [
-          'thumb' => [ 'resize' => [100, 100]]
+            'thumb' => ['resize'    => [100, 100]],
+            'mid'   => ['resize'    => [200, 200]],
+            'lg'    => ['resize'    => [300, 300]]
         ]
     ];
 
