@@ -97,6 +97,12 @@ trait ResizableTrait
      */
     public function getDestinationFolder() : string
     {
+        if (isset($this->resizable_folder)
+            && !empty($this->resizable_media)
+        ) {
+            return $this->resizable_folder;
+        }
+
         if (isset($this->resizable['folder'])) {
             return $this->resizable['folder'];
         }

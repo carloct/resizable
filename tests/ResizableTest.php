@@ -94,4 +94,22 @@ class ResizableTest extends TestCase
         $this->assertFalse($image->shouldKeepOriginal());
 
     }
+
+    /**
+     * @test
+     */
+    public function it_can_save_formats_in_arbitrary_folder()
+    {
+
+        $image = new Image();
+        $image->name = 'test';
+        $image->attachMedia($this->resizableFile)
+            ->to('tests/storage/uploads/folder');
+        $image->save();
+
+        $column = $image->getResizableColumnName();
+
+        $this->assertFileExists('tests/storage/uploads/folder/thumb/' . $image->$column);
+
+    }
 }
