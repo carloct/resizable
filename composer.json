@@ -26,5 +26,5 @@
             "Keisen\\Resizable\\Test\\": "tests"
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "dev"
 }
