@@ -4,16 +4,52 @@ namespace Keisen\Resizable\Test;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use Illuminate\Database\Schema\Blueprint;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Belt\Folder;
 
 abstract class TestCase extends Orchestra
 {
 
+    protected $resizableFile;
+
+    /**
+     * Set up the database and copy the test image from fixtures
+     *
+     * @return void
+     */
     public function setUp()
     {
         parent::setUp();
 
         $this->setUpDatabase();
+
+        copy('tests/fixtures/test.jpg', 'tests/uploads/test.jpg');
+
+        $this->resizableFile = new UploadedFile(
+            'tests/uploads/test.jpg',
+            'test.jpg',
+            null,
+            null,
+            null,
+            true
+        );
     }
+
+    /**
+     * Attach the service provider to the test suite
+     *
+     * @param \Illuminate\Foundation\Application $app
+     *
+     * @return array
+     */
+    protected function getPackageProviders($app)
+    {
+        return [
+            'Keisen\Resizable\ResizableServiceProvider',
+        ];
+    }
+
+
 
     /**
      * Define environment setup.
@@ -32,7 +68,6 @@ abstract class TestCase extends Orchestra
                 'prefix'   => '',
             ]
         );
-        $app['config']->set('resizable.folder', 'storage');
     }
 
     /**
@@ -48,7 +83,7 @@ abstract class TestCase extends Orchestra
             function (Blueprint $table) {
                 $table->increments('id');
                 $table->string('name');
-                $table->string('file');
+                $table->string('file')->nullable();
             }
         );
     }
@@ -62,10 +97,6 @@ abstract class TestCase extends Orchestra
     {
         parent::tearDown();
 
-        $dirs = glob('tests/storage/*');
-        foreach ($dirs as $dir) {
-            array_map('unlink', glob("{$dir}/*.*"));
-            rmdir($dir);
-        }
+        Folder::empty('tests/storage');
     }
 }

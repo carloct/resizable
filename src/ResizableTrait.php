@@ -2,53 +2,106 @@
 
 namespace Keisen\Resizable;
 
+use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Intervention\Image\ImageManagerStatic;
 use Keisen\Resizable\Exceptions\ResizableException;
+use Belt\Folder;
+use Belt\Filename;
 
 trait ResizableTrait
 {
+
+    protected $resizable_media;
+    protected $resizable_folder;
+
+    /**
+     * Attach the uploaded file to the model
+     *
+     * @param UploadedFile $media
+     *
+     * @return Model
+     */
+    public function attachMedia(UploadedFile $media) : Model
+    {
+        $this->resizable_media = $media;
+
+        return $this;
+    }
+
+    /**
+     * Specify the destination folder
+     *
+     * @param string $folder
+     *
+     * @return Model
+     */
+    public function to(string $folder) : Model
+    {
+        $this->resizable_folder = $folder;
+
+        return $this;
+    }
 
     /**
      * Resize the image to the specified formats and save the filename in
      * the object property
      *
-     * @param UploadedFile $file   file
-     * @param string|null  $folder folder
-     *
      * @throws ResizableException
      *
      * @return void
      */
-    public function resize(UploadedFile $file, string $folder = null)
+    public function resize()
     {
-        if (!file_exists($folder)) {
-            throw new ResizableException("The folder {$folder} doesn't exist");
+        if (empty($this->resizable_media)) {
+            throw new ResizableException('No media attached to the model');
         }
 
         if ($this->hasFormats()) {
 
+            Folder::create($this->getDestinationFolder());
+
             $formats = $this->getFormats();
-            $column = $this->getColumnName();
-            $this->$column = $this->generateName($file);
+            $column = $this->getResizableColumnName();
+            $folder = $this->getDestinationFolder();
+            $this->$column = $this->generateFilename($this->resizable_media);
 
             foreach ($formats as $format => $filter) {
-                
+
                 $func = key($filter);
                 $args = $filter[$func];
 
-                $destFolder = $folder . "/{$format}/";
+                $formatFolder = $folder . "/{$format}/";
 
-                if (!$this->createFolder($destFolder)) {
+                if (!$this->createFolder($formatFolder)) {
                     throw new ResizableException("Cannot create format folder");
                 }
 
-                ImageManagerStatic::make($file)
+                ImageManagerStatic::make($this->resizable_media)
                     ->$func($args[0], $args[1])
-                    ->save($destFolder . $this->$column);
+                    ->save($formatFolder . $this->$column);
             }
 
+            if ($this->shouldKeepOriginal()) {
+                $this->resizable_media->move($folder . "/original/", $this->$column);
+            }
         }
+        
+    }
+
+    /**
+     * Try to get the destination folder from the model property
+     * or fallback to the config parameter
+     *
+     * @return string
+     */
+    public function getDestinationFolder() : string
+    {
+        if (isset($this->resizable['folder'])) {
+            return $this->resizable['folder'];
+        }
+
+        return config('resizable.folder', 'storage/uploads');
     }
 
     /**
@@ -90,16 +143,15 @@ trait ResizableTrait
      *
      * @return string
      */
-    public function generateName(UploadedFile  $file) : string
+    public function generateFileName(UploadedFile  $file) : string
     {
-        $ext = "." . $file->getClientOriginalExtension();
-        $filename = preg_replace(
-            "/[^a-z0-9\\._-]+/",
-            "",
-            strtolower($file->getClientOriginalName())
-        );
 
-        return basename($filename, $ext) . "-" . str_random(6) . $ext;
+        if ($this->shouldAddEntropy()) {
+            return Filename::appendEntropy($file->getClientOriginalName(), 8);
+        }
+
+        return $file->getClientOriginalName();
+
     }
 
     /**
@@ -107,13 +159,13 @@ trait ResizableTrait
      *
      * @return string
      */
-    public function getColumnName() : string
+    public function getResizableColumnName() : string
     {
         if (isset($this->resizable['column'])) {
             return $this->resizable['column'];
         }
 
-        return 'file';
+        return config('resizable.column');
     }
 
     /**
@@ -125,11 +177,51 @@ trait ResizableTrait
      */
     public function createFolder($folder) : bool
     {
-        if (!file_exists($folder)) {
-            return mkdir($folder, 0777, true);
+        return Folder::create($folder);
+    }
+
+    /**
+     * Should keep the original
+     *
+     * @return bool
+     */
+    public function shouldKeepOriginal() : bool
+    {
+        if (isset($this->resizable['keep_original'])) {
+            return $this->resizable['keep_original'];
         }
 
-        return true;
+        return config('resizable.keep_original', true);
+    }
+
+    /**
+     * Should add entropy to filenames
+     *
+     * @return bool
+     */
+    public function shouldAddEntropy() : bool
+    {
+        if (isset($this->resizable['entropy'])) {
+            return $this->resizable['entropy'];
+        }
+
+        return config('resizable.entropy', true);
+    }
+
+    /**
+     * Check if the model has a file attached
+     *
+     * @return bool
+     */
+    public function hasMedia() : bool
+    {
+        if (!empty($this->resizable_media)
+            && $this->resizable_media instanceof UploadedFile
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
 }

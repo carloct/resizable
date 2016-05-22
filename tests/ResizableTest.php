@@ -12,26 +12,21 @@ class ResizableTest extends TestCase
     /**
      * @test
      */
-    public function it_saves_the_image_in_folder()
+    public function it_saves_the_image_in_default_folder()
     {
-        $file = new UploadedFile(
-            'tests/fixtures/test.jpg',
-            'test.jpg',
-            null,
-            null,
-            null,
-            true
-        );
 
         $image = new Image();
         $image->name = 'test';
-        $image->resize($file, 'tests/storage');
+        $image->attachMedia($this->resizableFile);
+        $image->save();
 
-        $column = $image->getColumnName();
+        $column = $image->getResizableColumnName();
 
-        $this->assertFileExists('tests/storage/thumb/' . $image->$column);
-        $this->assertFileExists('tests/storage/mid/' . $image->$column);
-        $this->assertFileExists('tests/storage/lg/' . $image->$column);
+        $this->assertFileExists('tests/storage/uploads/thumb/' . $image->$column);
+        $this->assertFileExists('tests/storage/uploads/mid/' . $image->$column);
+        $this->assertFileExists('tests/storage/uploads/lg/' . $image->$column);
+        $this->assertFileExists('tests/storage/uploads/original/' . $image->$column);
+
     }
 
     /**
@@ -39,21 +34,13 @@ class ResizableTest extends TestCase
      */
     public function it_save_the_image_name_in_db()
     {
-        $file = new UploadedFile(
-            'tests/fixtures/test.jpg',
-            'test.jpg',
-            null,
-            null,
-            null,
-            true
-        );
 
         $image = new Image();
         $image->name = 'test';
-        $image->resize($file, 'tests/storage');
+        $image->attachMedia($this->resizableFile);
         $image->save();
 
-        $column = $image->getColumnName();
+        $column = $image->getResizableColumnName();
 
         $this->seeInDatabase('images', [$column => $image->$column]);
     }
@@ -61,24 +48,50 @@ class ResizableTest extends TestCase
     /**
      * @test
      */
-    public function it_throws_an_exception_if_the_folder_doesnt_exists()
+    public function it_saves_the_image_with_no_settings()
     {
-        $this->setExpectedException(
-            '\Keisen\Resizable\Exceptions\ResizableException'
-        );
 
-        $file = new UploadedFile(
-            'tests/fixtures/test.jpg',
-            'test.jpg',
-            null,
-            null,
-            null,
-            true
-        );
-
-        $image = new Image();
+        $image = new ImageNoSettings();
         $image->name = 'test';
-        $image->resize($file, 'tests/bla');
+        $image->attachMedia($this->resizableFile);
+        $image->save();
+        
+        $column = $image->getResizableColumnName();
+
+        $this->assertFileNotExists('tests/storage/uploads/thumb/' . $image->$column);
+        $this->assertFileNotExists('tests/storage/uploads/original/' . $image->$column);
+    }
+
+    /**
+     * @test
+     */
+    public function it_can_check_if_model_has_media()
+    {
+
+        $image = new ImageNoSettings();
+
+        $this->assertFalse($image->hasMedia());
+
+        $image = new ImageNoSettings();
+        $image->attachMedia($this->resizableFile);
+
+        $this->assertTrue($image->hasMedia());
+    }
+
+    /**
+     * @test
+     */
+    public function it_can_check_if_should_keep_original()
+    {
+        $image = new ImageNoSettings();
+
+        $this->assertTrue($image->shouldKeepOriginal());
+
+        config(['resizable.keep_original' => false]);
+
+        $image = new ImageNoSettings();
+
+        $this->assertFalse($image->shouldKeepOriginal());
 
     }
 }

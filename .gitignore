@@ -1,3 +1,5 @@
 vendor/
 tests/storage/*
 tests/database.sqlite
+tests/uploads
+
