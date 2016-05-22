@@ -1,5 +1,5 @@
 {
-    "name": "carloc/resizable",
+    "name": "carloct/resizable",
     "require": {
         "php": ">=7.0",
         "intervention/image": "^2.3",

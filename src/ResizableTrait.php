@@ -11,7 +11,7 @@ use Belt\Filename;
 
 trait ResizableTrait
 {
-
+    
     protected $resizable_media;
     protected $resizable_folder;
 
