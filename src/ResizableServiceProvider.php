@@ -26,7 +26,7 @@ class ResizableServiceProvider extends ServiceProvider
 
 
         $this->app['events']->listen('eloquent.creating*', function ($model) {
-            if ($model instanceof Resizable) {
+            if ($model instanceof Resizable && $model->hasMedia()) {
                 $model->resize();
             }
         });
