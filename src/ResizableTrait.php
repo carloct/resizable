@@ -11,7 +11,7 @@ use Belt\Filename;
 
 trait ResizableTrait
 {
-    
+
     protected $resizable_media;
     protected $resizable_folder;
 
@@ -25,6 +25,9 @@ trait ResizableTrait
     public function attachMedia(UploadedFile $media) : Model
     {
         $this->resizable_media = $media;
+
+        $column = $this->getResizableColumnName();
+        $this->$column = $this->generateFileName($this->resizable_media);
 
         return $this;
     }
@@ -64,7 +67,6 @@ trait ResizableTrait
             $formats = $this->getFormats();
             $column = $this->getResizableColumnName();
             $folder = $this->getDestinationFolder();
-            $this->$column = $this->generateFilename($this->resizable_media);
 
             foreach ($formats as $format => $filter) {
 
