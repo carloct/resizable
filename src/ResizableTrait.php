@@ -75,9 +75,7 @@ trait ResizableTrait
 
                 $formatFolder = $folder . "/{$format}/";
 
-                if (!$this->createFolder($formatFolder)) {
-                    throw new ResizableException("Cannot create format folder");
-                }
+                $this->createFolder($formatFolder);
 
                 ImageManagerStatic::make($this->resizable_media)
                     ->$func($args[0], $args[1])
